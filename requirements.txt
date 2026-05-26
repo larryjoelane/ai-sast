@@ -3,6 +3,11 @@
 google-genai>=1.0.0
 google-cloud-aiplatform>=1.25.0
 
+# Azure OpenAI (optional; required when AI_SAST_LLM=azure or AI_SAST_VALIDATOR_LLM=azure)
+openai>=1.40.0
+# Only needed for keyless Entra ID (AAD) auth when AZURE_OPENAI_API_KEY is not set
+azure-identity>=1.17.0
+
 # AWS Bedrock (optional; required when LLM_PROVIDER=bedrock)
 boto3>=1.28.0
 google-cloud-core>=2.3.3

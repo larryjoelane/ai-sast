@@ -24,21 +24,30 @@ from .config import (
     PROJECT_ID, LOCATION, GEMINI_MODEL,
     OLLAMA_BASE_URL, OLLAMA_MODEL,
     AWS_REGION, BEDROCK_MODEL_ID,
+    AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_SCAN_DEPLOYMENT,
 )
 
-# Import LLM clients based on AI_SAST_LLM (vertex | bedrock | ollama)
+# Import LLM clients based on AI_SAST_LLM (vertex | bedrock | azure | ollama)
 if AI_SAST_LLM == "ollama":
     from ..integrations.ollama import OllamaClient
     VertexAIClient = None
     BedrockClaudeClient = None
+    AzureOpenAIClient = None
 elif AI_SAST_LLM == "bedrock":
     from ..integrations.bedrock import BedrockClaudeClient
     from .vertex import VertexAIClient  # may be used for fallback
+    OllamaClient = None
+    AzureOpenAIClient = None
+elif AI_SAST_LLM == "azure":
+    from ..integrations.azure_openai import AzureOpenAIClient
+    VertexAIClient = None
+    BedrockClaudeClient = None
     OllamaClient = None
 else:
     from .vertex import VertexAIClient
     OllamaClient = None
     BedrockClaudeClient = None
+    AzureOpenAIClient = None
 
 # Optional integrations - import only if available
 try:
@@ -147,6 +156,13 @@ Format your response for each finding as:
                 model_id=BEDROCK_MODEL_ID,
             )
             self.backend = "bedrock"
+        elif AI_SAST_LLM == "azure":
+            print(f"🔧 Initial scan LLM: Azure OpenAI, deployment: {AZURE_OPENAI_SCAN_DEPLOYMENT}")
+            self.client = AzureOpenAIClient(
+                endpoint=AZURE_OPENAI_ENDPOINT,
+                deployment=AZURE_OPENAI_SCAN_DEPLOYMENT,
+            )
+            self.backend = "azure"
         else:
             print(f"🔧 Initial scan LLM: Vertex AI (Gemini), model: {GEMINI_MODEL}")
             self.client = VertexAIClient(
@@ -368,9 +384,11 @@ Format your response for each finding as:
                     analysis = self.client.generate_with_ollama(prompt, temperature=0.2)
                 elif self.backend == "bedrock":
                     analysis = self.client.generate_with_bedrock(prompt, model_name=BEDROCK_MODEL_ID)
+                elif self.backend == "azure":
+                    analysis = self.client.generate_with_azure(prompt, model_name=AZURE_OPENAI_SCAN_DEPLOYMENT)
                 else:
                     analysis = self.client.generate_with_gemini(prompt, model_name=GEMINI_MODEL)
-                
+
                 return {
                     "file_path": file_path,
                     "language": language,
@@ -499,6 +517,8 @@ Use the exact file path as written above for that file. Then provide your analys
                     analysis_text = self.client.generate_with_ollama(prompt, temperature=0.2)
                 elif self.backend == "bedrock":
                     analysis_text = self.client.generate_with_bedrock(prompt, model_name=BEDROCK_MODEL_ID)
+                elif self.backend == "azure":
+                    analysis_text = self.client.generate_with_azure(prompt, model_name=AZURE_OPENAI_SCAN_DEPLOYMENT)
                 else:
                     analysis_text = self.client.generate_with_gemini(prompt, model_name=GEMINI_MODEL)
                 parsed = self._parse_batch_response(analysis_text, expected_paths)

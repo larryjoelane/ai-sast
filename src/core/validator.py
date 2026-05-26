@@ -25,6 +25,8 @@ from .config import (
     AWS_REGION,
     OLLAMA_BASE_URL,
     OLLAMA_MODEL,
+    AZURE_OPENAI_ENDPOINT,
+    AZURE_OPENAI_VALIDATOR_DEPLOYMENT,
 )
 
 
@@ -161,6 +163,22 @@ def validate_findings(
 
             def generate(prompt: str) -> str:
                 return client.generate_with_ollama(prompt, temperature=0.1)
+
+        elif provider == "azure":
+            from ..integrations.azure_openai import AzureOpenAIClient
+            client = AzureOpenAIClient(
+                endpoint=AZURE_OPENAI_ENDPOINT,
+                deployment=AZURE_OPENAI_VALIDATOR_DEPLOYMENT,
+            )
+            validator_llm_label = f"azure:{AZURE_OPENAI_VALIDATOR_DEPLOYMENT}"
+            print(f"🔧 Validator LLM: Azure OpenAI, deployment: {AZURE_OPENAI_VALIDATOR_DEPLOYMENT}")
+
+            def generate(prompt: str) -> str:
+                return client.generate_with_azure(
+                    prompt,
+                    model_name=AZURE_OPENAI_VALIDATOR_DEPLOYMENT,
+                    temperature=0.1,
+                )
 
         else:
             print(f"⚠️ Validator LLM unknown: {provider}. Skipping validation.")

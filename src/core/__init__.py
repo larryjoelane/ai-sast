@@ -3,9 +3,15 @@ Core modules for AI-SAST security scanner
 """
 
 from .scanner import SecurityScanner
-from .vertex import VertexAIClient
 from .report import HTMLReportGenerator
 from .config import PROJECT_ID, LOCATION
+
+# Vertex AI client is optional: its Google Cloud deps are only needed when
+# AI_SAST_LLM=vertex. Azure/Bedrock/Ollama-only installs can skip them.
+try:
+    from .vertex import VertexAIClient
+except ImportError:
+    VertexAIClient = None
 
 # Optional integrations
 try:

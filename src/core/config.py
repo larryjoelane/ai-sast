@@ -9,12 +9,12 @@ import os
 # ============================================================================
 
 # AI_SAST_LLM: LLM provider for the initial security scan
-# Options: "vertex" (Gemini), "bedrock" (Claude), "ollama" (local)
+# Options: "vertex" (Gemini), "bedrock" (Claude), "azure" (Azure OpenAI), "ollama" (local)
 # Default: "vertex"
 AI_SAST_LLM = os.getenv("AI_SAST_LLM", "vertex").lower()
 
 # AI_SAST_VALIDATOR_LLM: LLM provider for validating findings (true positive check)
-# Options: "vertex", "bedrock", "ollama". If not configured or on error, validation is skipped.
+# Options: "vertex", "bedrock", "azure", "ollama". If not configured or on error, validation is skipped.
 # Default: "bedrock"
 AI_SAST_VALIDATOR_LLM = os.getenv("AI_SAST_VALIDATOR_LLM", "bedrock").lower()
 
@@ -55,6 +55,38 @@ OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 # Recommended: "qwen2.5-coder:14b", "codellama:13b", "llama3.1:8b"
 # Default: "qwen2.5-coder:14b" (best balance for code security analysis)
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5-coder:14b")
+
+# ============================================================================
+# Azure OpenAI Configuration (when AI_SAST_LLM=azure or AI_SAST_VALIDATOR_LLM=azure)
+# ============================================================================
+
+# AZURE_OPENAI_ENDPOINT: Azure OpenAI resource endpoint (required for azure backend)
+# Example: "https://my-resource.openai.azure.com"
+AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT", None)
+
+# AZURE_OPENAI_API_VERSION: Azure OpenAI REST API version
+# Default: "2024-10-21" (stable GA)
+AZURE_OPENAI_API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION", "2024-10-21")
+
+# AZURE_OPENAI_API_KEY: API key for key-based auth (optional).
+# If unset, the client falls back to Entra ID (AAD) auth via azure-identity.
+AZURE_OPENAI_API_KEY = os.getenv("AZURE_OPENAI_API_KEY", None)
+
+# AZURE_OPENAI_SCAN_DEPLOYMENT: Deployment name for the initial scan (when AI_SAST_LLM=azure)
+# This is your Azure *deployment* name, not the base model name.
+# Falls back to AZURE_OPENAI_DEPLOYMENT, then "gpt-4o".
+AZURE_OPENAI_SCAN_DEPLOYMENT = os.getenv(
+    "AZURE_OPENAI_SCAN_DEPLOYMENT",
+    os.getenv("AZURE_OPENAI_DEPLOYMENT", "gpt-4o"),
+)
+
+# AZURE_OPENAI_VALIDATOR_DEPLOYMENT: Deployment for validating findings (when AI_SAST_VALIDATOR_LLM=azure)
+# A faster/cheaper second model is recommended for the TRUE/FALSE check.
+# Falls back to AZURE_OPENAI_DEPLOYMENT, then "gpt-4o-mini".
+AZURE_OPENAI_VALIDATOR_DEPLOYMENT = os.getenv(
+    "AZURE_OPENAI_VALIDATOR_DEPLOYMENT",
+    os.getenv("AZURE_OPENAI_DEPLOYMENT", "gpt-4o-mini"),
+)
 
 # ============================================================================
 # AWS Bedrock Configuration (when AI_SAST_LLM=bedrock)
