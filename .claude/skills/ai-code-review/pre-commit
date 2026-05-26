@@ -1,0 +1,44 @@
+#!/bin/sh
+# ---------------------------------------------------------------------------
+# AI-SAST two-model pre-commit security review (Azure OpenAI).
+#
+# Installed by the `ai-code-review` skill. Runs the ai-sast scanner (model 1)
+# and validator (model 2) over staged source files and blocks the commit when
+# a validated finding at/above the gate severity is found.
+#
+# Configuration is read from <repo-root>/.ai-sast.env (see ai-sast.env.example)
+# or the environment. Bypass a single commit with: git commit --no-verify
+# ---------------------------------------------------------------------------
+set -e
+
+REPO_ROOT=$(git rev-parse --show-toplevel)
+
+# Load per-repo config (endpoint, deployments, AI_SAST_HOME, gate severity...).
+if [ -f "$REPO_ROOT/.ai-sast.env" ]; then
+  set -a
+  . "$REPO_ROOT/.ai-sast.env"
+  set +a
+fi
+
+if [ -z "$AI_SAST_HOME" ]; then
+  echo "⚠️  ai-sast: AI_SAST_HOME is not set (point it at your ai-sast checkout"
+  echo "    in $REPO_ROOT/.ai-sast.env). Skipping security review."
+  exit 0
+fi
+
+# UTF-8 so emoji/log output does not crash on the Windows console (cp1252).
+export PYTHONIOENCODING=utf-8
+export AI_SAST_LLM="${AI_SAST_LLM:-azure}"
+export AI_SAST_VALIDATOR_LLM="${AI_SAST_VALIDATOR_LLM:-azure}"
+
+# Staged, added/changed files (relative to repo root = current dir for the hook).
+FILES=$(git diff --cached --name-only --diff-filter=ACM)
+if [ -z "$FILES" ]; then
+  exit 0
+fi
+
+PYTHON="${AI_SAST_PYTHON:-python}"
+
+# Run from the repo root so staged paths resolve; import ai-sast via PYTHONPATH.
+# shellcheck disable=SC2086  # intentional word-splitting of the file list
+PYTHONPATH="$AI_SAST_HOME" "$PYTHON" -m src.main.precommit_scan $FILES
